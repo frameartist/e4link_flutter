@@ -346,7 +346,9 @@ namespace EmpaticaBLEClient
             {
                 var DevicesIDs = new List<Tuple<string, string>>
                 {
-                    new Tuple<string, string>("634D5C", "10BC")
+                    new Tuple<string, string>("634D5C", "10BC"),
+                    new Tuple<string, string>("F2DCCC", "Device 2"),
+                    new Tuple<string, string>("71E1CC", "Device 3"),
                 };
 
                 foreach (var DeviceIDName in DevicesIDs)

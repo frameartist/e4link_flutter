@@ -1,0 +1,6 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/ble-client-windows/obj/Debug
+/ble-client-windows/.vs/EmpaticaBLEClient/FileContentIndex
