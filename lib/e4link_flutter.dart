@@ -21,6 +21,10 @@ class E4linkFlutter {
       StreamController<E4Event>();
 
   static Stream<E4Event> get eventStream => _eventStream.stream;
+  static final Map<String, E4EventType> eventTypes = {
+    "E4_Bvp": E4EventType.bvp,
+    "E4_Temperature": E4EventType.tmp
+  };
 
   Future<String?> getPlatformVersion() {
     return E4linkFlutterPlatform.instance.getPlatformVersion();
@@ -28,17 +32,16 @@ class E4linkFlutter {
 
   static Future<List<E4Device>> discoverDevices() async {
     var socket = await Socket.connect(_address, _port);
-    socket.write("device_discover_list\r\n");
+    socket.write("device_list\r\n");
     await for (final event in socket) {
       List<E4Device> deviceList = [];
       String result = utf8.decode(event);
       List<String> splitted = result.split(' ');
-      if (splitted[0] == "R" && splitted[1] == "device_discover_list") {
+      if (splitted[0] == "R" && splitted[1] == "device_list") {
         List<String> devices = result.split(" | ").sublist(1);
         for (var device in devices) {
           List<String> deviceSplitted = device.split(" ");
-          deviceList.add(E4Device(deviceSplitted[0], deviceSplitted[1],
-              deviceSplitted[2] == "allowed"));
+          deviceList.add(E4Device(deviceSplitted[0], deviceSplitted[1], true));
         }
         socket.close();
         return deviceList;
@@ -51,13 +54,22 @@ class E4linkFlutter {
   //This method handles the received data from E4
   static void handleEvent(id, event) {
     String result = utf8.decode(event);
-    print(result);
+
+    result = result.split('\n').reversed.elementAt(1);
+    //print(id + result);
     List<String> splitted = result.split(' ');
+    if (splitted[1] == "device_connect") {
+      _eventStream.add(E4Event(id, E4EventType.connected, 0, "OK"));
+    }
     switch (splitted[0]) {
       case 'E4_Bvp':
+      case 'E4_Temperature':
         {
           _eventStream.add(E4Event(
-              id, E4EventType.bvp, double.parse(splitted[1]), splitted[2]));
+              id,
+              eventTypes[splitted[0]] ?? E4EventType.unknown,
+              double.parse(splitted[1]),
+              double.tryParse(splitted[2]) ?? splitted[2]));
         }
         break;
     }
@@ -65,7 +77,7 @@ class E4linkFlutter {
 
   //This method connects to a device and stores the socket used for connection in this Map called devices.
   static Future<void> connect(String id) async {
-    print("connecting");
+    print("connecting $id");
     var socket = await Socket.connect(_address, _port);
     print("connected");
     socket.listen(
@@ -81,7 +93,18 @@ class E4linkFlutter {
         socket.destroy();
       },
     );
-    socket.write("device_connect $id\r\n");
+    var command = "device_connect $id\r\n";
+    print(command);
+    socket.write(command);
     devices[id] = socket;
+    Future.delayed(Duration(seconds: 3));
+  }
+
+  static void subscribe(String id, String feature) {
+    devices[id]?.write("device_subscribe $feature ON\r\n");
+  }
+
+  static void unsubscribe(String id, String feature) {
+    devices[id]?.write("device_subscribe $feature OFF\r\n");
   }
 }

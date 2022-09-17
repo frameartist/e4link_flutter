@@ -2,6 +2,7 @@ class E4Device {
   String id;
   String name;
   bool isAllowed;
+  Map readings = {};
   E4Device(this.id, this.name, this.isAllowed);
 }
 
@@ -14,5 +15,12 @@ class E4Event {
 }
 
 enum E4EventType {
-  bvp; //TODO: add more
+  bvp("bvp"),
+  tmp("tmp"),
+  //TODO: add more
+  connected("connected"),
+  unknown("unknown");
+
+  const E4EventType(String this.value);
+  final String value;
 }

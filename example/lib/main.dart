@@ -1,3 +1,4 @@
+import 'package:e4link_flutter/models.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -18,15 +19,13 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
   final _e4linkFlutterPlugin = E4linkFlutter();
+  Map<String, E4Device> devices = {};
 
   @override
   void initState() {
     super.initState();
-    /*final e4 = E4linkFlutter();
-    e4.initCommunication().then((value) => e4.discoverDevices());
-    e4.deviceStream.listen((event) => print(event.id));*/
-    E4linkFlutter.discoverDevices().then(((value) => print(value)));
-    E4linkFlutter.connect("hihi");
+
+    initE4Connecton();
     initPlatformState();
   }
 
@@ -52,6 +51,36 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  Future<void> initE4Connecton() async {
+    var discoveredDevices = await E4linkFlutter.discoverDevices();
+    for (var device in discoveredDevices) {
+      setState(() {
+        devices[device.id] = device;
+      });
+      E4linkFlutter.connect(device.id);
+    }
+    E4linkFlutter.eventStream.listen(handleE4Events);
+  }
+
+  void handleE4Events(event) {
+    switch (event.dataType) {
+      case E4EventType.bvp:
+      case E4EventType.tmp:
+        {
+          setState(() {
+            devices[event.id]?.readings[event.dataType.value] = event.value;
+          });
+        }
+        break;
+      case E4EventType.connected:
+        {
+          E4linkFlutter.subscribe(event.id, "bvp");
+          E4linkFlutter.subscribe(event.id, "tmp");
+        }
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -60,8 +89,10 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: Text('Running on: $_platformVersion\n'),
-        ),
+            child: ListView.builder(
+                itemBuilder: (context, count) => Text(
+                    "${devices.values.toList()[count].id} ${devices.values.toList()[count].readings["bvp"]} ${devices.values.toList()[count].readings["tmp"]}"),
+                itemCount: devices.length)),
       ),
     );
   }
