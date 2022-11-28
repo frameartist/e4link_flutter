@@ -23,7 +23,10 @@ class E4linkFlutter {
   static Stream<E4Event> get eventStream => _eventStream.stream;
   static final Map<String, E4EventType> eventTypes = {
     "E4_Bvp": E4EventType.bvp,
-    "E4_Temperature": E4EventType.tmp
+    "E4_Temperature": E4EventType.tmp,
+    "E4_Gsr": E4EventType.gsr,
+    "E4_Ibi": E4EventType.ibi,
+    "E4_Hr": E4EventType.hr
   };
 
   Future<String?> getPlatformVersion() {
@@ -53,25 +56,31 @@ class E4linkFlutter {
 
   //This method handles the received data from E4
   static void handleEvent(id, event) {
-    String result = utf8.decode(event);
+    String results = utf8.decode(event);
+    print(results);
+    for (String result in results.split('\n')) {
+      if (result.isEmpty) continue;
 
-    result = result.split('\n').reversed.elementAt(1);
-    //print(id + result);
-    List<String> splitted = result.split(' ');
-    if (splitted[1] == "device_connect") {
-      _eventStream.add(E4Event(id, E4EventType.connected, 0, "OK"));
-    }
-    switch (splitted[0]) {
-      case 'E4_Bvp':
-      case 'E4_Temperature':
-        {
-          _eventStream.add(E4Event(
-              id,
-              eventTypes[splitted[0]] ?? E4EventType.unknown,
-              double.parse(splitted[1]),
-              double.tryParse(splitted[2]) ?? splitted[2]));
-        }
-        break;
+      //print(id + result);
+      List<String> splitted = result.split(' ');
+      if (splitted[1] == "device_connect") {
+        _eventStream.add(E4Event(id, E4EventType.connected, 0, "OK"));
+      }
+      switch (splitted[0]) {
+        case 'E4_Bvp':
+        case 'E4_Temperature':
+        case 'E4_Ibi':
+        case 'E4_Gsr':
+        case 'E4_Hr':
+          {
+            _eventStream.add(E4Event(
+                id,
+                eventTypes[splitted[0]] ?? E4EventType.unknown,
+                double.parse(splitted[1]),
+                double.tryParse(splitted[2]) ?? splitted[2]));
+          }
+          break;
+      }
     }
   }
 
@@ -100,7 +109,8 @@ class E4linkFlutter {
     Future.delayed(Duration(seconds: 3));
   }
 
-  static void subscribe(String id, String feature) {
+  static Future<void> subscribe(String id, String feature) async {
+    await Future.delayed(Duration(milliseconds: 500));
     devices[id]?.write("device_subscribe $feature ON\r\n");
   }
 

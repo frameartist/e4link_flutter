@@ -17,6 +17,9 @@ class E4Event {
 enum E4EventType {
   bvp("bvp"),
   tmp("tmp"),
+  ibi("ibi"),
+  gsr("gsr"),
+  hr("hr"),
   //TODO: add more
   connected("connected"),
   unknown("unknown");

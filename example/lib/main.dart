@@ -66,6 +66,8 @@ class _MyAppState extends State<MyApp> {
     switch (event.dataType) {
       case E4EventType.bvp:
       case E4EventType.tmp:
+      case E4EventType.ibi:
+      case E4EventType.gsr:
         {
           setState(() {
             devices[event.id]?.readings[event.dataType.value] = event.value;
